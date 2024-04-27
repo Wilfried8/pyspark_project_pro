@@ -23,29 +23,30 @@ def load_files(spark, file_format, file_direction, header, inferSchema):
     return df
 
 
-def display_data(df, dfname):
+def display_data(df, dfName):
     try:
-        loggers.info('Here we display the top 8 in the {}'.format(dfname))
+        loggers.info('Here we display the top 8 in the {}'.format(dfName))
         df_show = df.show(8)
 
     except Exception as e:
         loggers.error(f"we have an error with a exception : {str(e)}")
         raise
     else:
-        loggers.info("dataframe displayed successful , Good Job, with name {} ".format(dfname))
+        loggers.info("dataframe displayed successful , Good Job, with name {} ".format(dfName))
     return df_show
 
 
-def df_count(df, dfname):
+def df_count(df, dfName):
     try:
-        loggers.info('Here to count the records in the {}'.format(dfname))
+        loggers.info('Here to count the records in the {}'.format(dfName))
         df_c = df.count()
 
     except Exception as e:
         loggers.error(f"we have an error with a exception : {str(e)}")
         raise
+
     else:
-        loggers.info("Number of records present in the {} are {} ".format(df, df_c))
+        loggers.info("Number of records present in the {} are {} ".format(dfName, df_c))
     return df_c
 
 

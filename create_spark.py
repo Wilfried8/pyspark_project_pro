@@ -11,7 +11,7 @@ def get_spark_objet(envn, appName):
         if envn == 'DEV':
             master = 'local'
         else:
-            master = 'yarn'
+            master = 'Yarn'
 
         loggers.info('master is {}'.format(master))
 
