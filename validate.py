@@ -1,5 +1,5 @@
 import logging
-
+from pyspark.sql.functions import upper, col, lit, regexp_replace, concat_ws, count, when, isnan, mean
 from pyspark.sql.functions import current_date, current_timestamp
 import logging.config
 
@@ -39,3 +39,33 @@ def print_schema(df, dfName):
         raise
     else:
         loggers.warning('print schema done , Good Job, ...')
+
+
+def check_null_values(df, dfName):
+    try:
+        loggers.info('check null values method for dataframe ..... {}'.format(dfName))
+        df_null_values = df.select([count(when(isnan(c) | col(c).isNull(), c)).alias(c)
+                                    for c in df.columns])
+    except Exception as e:
+        loggers.error(f"we have an error with a exception : {str(e)}")
+        raise
+    else:
+        loggers.warning('check for null values executed successfully , Good Job, ...')
+
+    return df_null_values
+
+
+def check_and_drop_duplicate_row(df, dfName):
+    try:
+        loggers.info("check duplicate rows in the dataframe ...... {}".format(dfName))
+
+        if df.distinct().count() == df.count():
+            loggers.warning("we don't have duplicate rows in the dataFrame ..... {}".format(dfName))
+        else:
+            df.dropDuplicates()
+    except Exception as e:
+        loggers.info('this is a problem with distinct value')
+        loggers.error(f"we have an error with a exception : {str(e)}")
+        raise
+    else:
+        loggers.warning("we don't have duplicate rows , Good Job, ...")

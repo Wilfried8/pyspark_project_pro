@@ -1,4 +1,4 @@
-from pyspark.sql.functions import upper, col, lit, regexp_replace, concat_ws, count, when, isnan
+from pyspark.sql.functions import upper, col, lit, regexp_replace, concat_ws, count, when, isnan, mean
 from pyspark.sql.types import StructType, StringType, StructField, IntegerType, DoubleType
 
 import logging.config
@@ -49,6 +49,10 @@ def data_processing(df1, df2):
         loggers.info('drop the null value in some columns in df_medicare_sel')
         df_medicare_sel = df_medicare_sel.dropna(subset='presc_id')
         df_medicare_sel = df_medicare_sel.dropna(subset='drug_name')
+
+        loggers.info('fill the null values in tx_count with the avg values')
+        avg_tx_count = df_medicare_sel.select(mean(col('tx_count'))).collect()[0][0]
+        df_medicare_sel = df_medicare_sel.fillna(avg_tx_count, 'tx_count')
 
         loggers.warning('successfully dropped null values in df_medicare_sel .....')
 
