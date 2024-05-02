@@ -1,16 +1,20 @@
 import os
 import sys
 
+from time import perf_counter
 import get_env_variables as gev
 from create_spark import get_spark_objet
 from validate import get_current_date, print_schema, check_null_values, check_and_drop_duplicate_row
 from ingest_data import load_files, display_data, df_count
 from processing_data import data_processing
-from data_transformation import data_report1
+from data_transformation import data_report1, data_report2
+from extraction import extract_files
 import logging
 import logging.config
 
 logging.config.fileConfig('Properties/configuration/logging.conf')
+
+start_time = perf_counter()
 
 
 def main():
@@ -103,10 +107,24 @@ def main():
         check_and_drop_duplicate_row(df_city_sel, dfName='df_city_sel')
 
         logging.info('data transformation started ....')
+
+        logging.info('transformation for reporting 1 ....')
         data_report_1 = data_report1(df_city_sel, df_medicare_sel)
 
         logging.info('display data report 1 ......')
         display_data(data_report_1, dfName='data_report_1')
+
+        logging.info('transformation for reporting 1 ....')
+        data_report_2 = data_report2(df_medicare_sel)
+
+        logging.info('display data report 1 ......')
+        display_data(data_report_2, dfName='data_report_1')
+
+        logging.info('extract file to output')
+        extract_files(data_report_1, 'orc', gev.output_city, 1, 'false', 'snappy')
+
+        extract_files(data_report_2, 'parquet', gev.output_prescriber, 2, 'false', 'snappy')
+        logging.info('extract file terminated')
 
     except Exception as e:
         logging.info(f"we have an error with a exception : {str(e)}")
@@ -115,4 +133,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+    end_time = perf_counter()
+    logging.info(f'total amount of time taken {start_time - end_time:.2f} seconds')
     logging.info('application done, Good Job .....')

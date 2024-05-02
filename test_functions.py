@@ -1,9 +1,11 @@
 from pyspark.sql import SparkSession
 from pyspark.sql.types import IntegerType, DoubleType
 from pyspark.sql.functions import upper, col, lit, regexp_replace, concat_ws, \
-    count, when, isnan, mean, split, size, udf, sum, countDistinct
+    count, when, isnan, mean, split, size, udf, sum, countDistinct, row_number, rank, dense_rank
+from pyspark.sql.window import Window
 import os
 from utils import count_num_zip
+from datetime import datetime
 
 
 import get_env_variables as gev
@@ -21,7 +23,7 @@ current_location = os.getcwd()
 df_medicare = spark2.read.option("header", gev.header).option("inferSchema", gev.inferSchema) \
      .csv(current_location + '/' + 'test_source/USAMedicare_Data_sel')
 
-df_city = spark2.read.parquet(current_location + '/' + 'test_source/us_cities.parquet')
+# df_city = spark2.read.parquet(current_location + '/' + 'test_source/us_cities.parquet')
 
 # df1 = df1.select(upper(df1.city).alias('city'), df1.state_id, upper(df1.state_name).alias('state_name'),
 #                  upper(df1.county_name).alias('country_name'),
@@ -79,19 +81,55 @@ df_city = spark2.read.parquet(current_location + '/' + 'test_source/us_cities.pa
 #  |-- country_name: string (nullable = true)
 #  |-- presc_full_name: string (nullable = true)
 
-df_city = df_city.withColumn('num_zips', size(split('zips', ' ')))
-df_city = df_city.withColumn('num_zips', count_num_zip(df_city.zips))
-
-df_medicare_agg = (
-    df_medicare.groupBy(['presc_state', 'presc_city'])
-    .agg(countDistinct('presc_id').alias('num_prescriber'),
-         sum('tx_count').alias('total_count'))
-    .orderBy('presc_state')
-)
-
-
-df_join = df_city.join(df_medicare_agg, (df_city.state_id == df_medicare_agg.presc_state) & (df_city.city == df_medicare_agg.presc_city), 'inner')
-
-df_final = df_join.select('city', 'state_name', 'country_name', 'population', 'num_zips', 'num_prescriber')
-
-df_final.show(20, False)
+# df_city = df_city.withColumn('num_zips', size(split('zips', ' ')))
+# df_city = df_city.withColumn('num_zips', count_num_zip(df_city.zips))
+#
+# df_medicare_agg = (
+#     df_medicare.groupBy(['presc_state', 'presc_city'])
+#     .agg(countDistinct('presc_id').alias('num_prescriber'),
+#          sum('tx_count').alias('total_count'))
+#     .orderBy('presc_state')
+# )
+#
+#
+# df_join = df_city.join(df_medicare_agg, (df_city.state_id == df_medicare_agg.presc_state) & (df_city.city == df_medicare_agg.presc_city), 'inner')
+#
+# df_final = df_join.select('city', 'state_name', 'country_name', 'population', 'num_zips', 'num_prescriber')
+# df_final = (
+#     df_medicare.groupby('presc_state')
+#     .agg(
+#         sum('tx_count').alias('sum_tx_count')
+#     )
+#     .orderBy('sum_tx_count')
+# )
+# w = Window().partitionBy('presc_state').orderBy('tx_count')
+# df = (
+#     df_medicare
+#     .withColumn('rn', row_number().over(w))
+#     .select('presc_full_name', 'presc_state', 'tx_count', 'rn')
+# )
+# print('show with row_number ......')
+# df.show()
+#
+# df2 = (
+#     df_medicare
+#     .withColumn('rn', rank().over(w))
+#     .select('presc_full_name', 'presc_state', 'tx_count', 'rn')
+# )
+# print('show with rank ......')
+# df2.show()
+# w = Window().partitionBy('presc_state').orderBy('tx_count')
+# df3 = (
+#     df_medicare
+#     .filter(col('years_of_exp').between(20, 50))
+#     .withColumn('rn', dense_rank().over(w))
+#     .select('presc_full_name', 'presc_state', 'years_of_exp', 'tx_count', 'rn').filter(col('rn') <= 5)
+# )
+# print('show with dense rank ......')
+# df3.show()
+#print(df_final.count())
+timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+output_folder = os.path.join(gev.output_prescriber, f"output_{timestamp}")
+print(df_medicare.rdd.getNumPartitions())
+df_medicare.coalesce(1).write.mode('overwrite').format('json').option('compression', 'bzip2')\
+    .option('header', 'false').save(output_folder)

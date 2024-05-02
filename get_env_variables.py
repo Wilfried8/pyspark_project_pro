@@ -15,3 +15,6 @@ current_location = os.getcwd()
 source_olap = current_location + '/source/olap'
 source_oltp = current_location + '/source/oltp'
 
+output_city = 'output/city'
+output_prescriber = 'output/prescriber'
+
