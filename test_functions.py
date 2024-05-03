@@ -13,6 +13,8 @@ import get_env_variables as gev
 spark2 = SparkSession.builder \
     .master('local') \
     .appName('test_functions') \
+    .enableHiveSupport() \
+    .config('spark.jars', "/Users/tayo/Documents/DataEngineer/pyspark_project_pro/postgresql-42.7.3.jar") \
     .getOrCreate()
 
 # df2 = spark2.read.option("header", gev.header).option("inferSchema", gev.inferSchema)\
@@ -128,8 +130,26 @@ df_medicare = spark2.read.option("header", gev.header).option("inferSchema", gev
 # print('show with dense rank ......')
 # df3.show()
 #print(df_final.count())
-timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-output_folder = os.path.join(gev.output_prescriber, f"output_{timestamp}")
-print(df_medicare.rdd.getNumPartitions())
-df_medicare.coalesce(1).write.mode('overwrite').format('json').option('compression', 'bzip2')\
-    .option('header', 'false').save(output_folder)
+# timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+# output_folder = os.path.join(gev.output_prescriber, f"output_{timestamp}")
+# print(df_medicare.rdd.getNumPartitions())
+# df_medicare.coalesce(1).write.mode('overwrite').format('json').option('compression', 'bzip2')\
+#     .option('header', 'false').save(output_folder)
+
+# spark2.sql(
+#             """ create database if not exists cities_test """
+#         )
+# spark2.sql(
+#             """ use cities_test """
+#         )
+# df_medicare.write.mode('overwrite').saveAsTable('df_med', partitionBy='presc_state')
+
+url = "jdbc:postgresql://localhost:5432/city_presc"
+
+properties = {
+    "user": "postgres",
+    "password": "postgres",
+    "driver": "org.postgresql.Driver"
+}
+
+df_medicare.write.jdbc(url=url, table='df_med', mode='overwrite', properties=properties)

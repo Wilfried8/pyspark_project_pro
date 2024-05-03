@@ -9,6 +9,7 @@ from ingest_data import load_files, display_data, df_count
 from processing_data import data_processing
 from data_transformation import data_report1, data_report2
 from extraction import extract_files
+from persist_data import persist_data_city, persist_data_prescriber, persist_to_postgres
 import logging
 import logging.config
 
@@ -109,22 +110,35 @@ def main():
         logging.info('data transformation started ....')
 
         logging.info('transformation for reporting 1 ....')
-        data_report_1 = data_report1(df_city_sel, df_medicare_sel)
+        data_report_city = data_report1(df_city_sel, df_medicare_sel)
 
         logging.info('display data report 1 ......')
-        display_data(data_report_1, dfName='data_report_1')
+        display_data(data_report_city, dfName='data_report_1')
 
         logging.info('transformation for reporting 1 ....')
-        data_report_2 = data_report2(df_medicare_sel)
+        data_report_prescriber = data_report2(df_medicare_sel)
 
         logging.info('display data report 1 ......')
-        display_data(data_report_2, dfName='data_report_1')
+        display_data(data_report_prescriber, dfName='data_report_1')
 
         logging.info('extract file to output')
-        extract_files(data_report_1, 'orc', gev.output_city, 1, 'false', 'snappy')
+        extract_files(data_report_city, 'orc', gev.output_city, 1, 'false', 'snappy')
 
-        extract_files(data_report_2, 'parquet', gev.output_prescriber, 2, 'false', 'snappy')
+        extract_files(data_report_prescriber, 'parquet', gev.output_prescriber, 2, 'false', 'snappy')
         logging.info('extract file terminated')
+
+        logging.info('save data in hive table .....')
+        persist_data_city(spark=spark, df=data_report_city, dfName='df_city', partitionBy='state_name', mode='append')
+        persist_data_prescriber(spark=spark, df=data_report_prescriber, dfName='df_prescriber',
+                                partitionBy='presc_state', mode='append')
+
+        logging.info('successfully written into hive, good ......')
+
+        logging.info('save data in postgres table .....')
+        persist_to_postgres(df=data_report_city, dfName='df_city', mode='append')
+        persist_to_postgres(df=data_report_prescriber, dfName='df_presc', mode='append')
+
+        logging.info('successfully written into postgres, good ......')
 
     except Exception as e:
         logging.info(f"we have an error with a exception : {str(e)}")

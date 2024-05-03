@@ -1,6 +1,9 @@
 source
 test_source
 output
+metastore_db
+spark-warehouse
+postgresql-42.7.3.jar
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
